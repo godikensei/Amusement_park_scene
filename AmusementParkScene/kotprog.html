@@ -1,0 +1,467 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset=utf-8>
+    <title>Dodgem scene</title>
+    <style>
+        body { margin: 0; overflow: hidden; }
+        canvas { width: 100%; height: 100% }
+        #caption {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            width: 50%;
+            text-align: left;
+            z-index: 100;
+            visibility: visible;
+            color: yellow;
+        }
+        #info {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            width: 100%;
+            text-align: right;
+            z-index: 100;
+            visibility: visible;
+            color: cyan;
+            opacity: 1.0;
+        }
+    </style>
+</head>
+<body onload="loader()">
+<div id="caption">
+    <p>Godó Norbert<br/>
+    GONWAAT.SZE<br/>
+    Gazdaságinformatikus<br/>
+    2016-2017-1</p>
+</div>
+<div id="info">
+    <p>A színtér az egér segítségével körbeforgatható!<br/>
+        A pontfény az T betű segítségével ki-be kapcsolható!<br/>
+        A dodgem a nyilak segítségével mozgatható!<br/>
+        A szöveges információk az 1-es billenytű segítségével kikapcsolható<br/>
+        és a 2-es billentyűvel bekapcsolható!</p>
+</div>
+<script src="js/three.js"></script>
+<script src="js-r79/TrackballControls.js"></script>
+<script src="js/SkyShader.js"></script>
+<script>
+    // Globális változók
+    var WIDTH, HEIGHT, aspectRatio;
+    var renderer;
+    var scene, camera;
+    var controls;
+    var dodgem, character1, character2, pLight, infoPanel, infoPanel1;
+
+    function loader() {
+        var loader = new THREE.JSONLoader();
+
+        loader.load('fence.json', function (geometry, mat) {
+            meshLoaded = new THREE.Mesh(geometry, mat[0]);
+            loader.load('dogemhouse_bg.json', function (geometry, mat){
+            meshLoaded3 = new THREE.Mesh(geometry, mat[0]);
+                loader.load('dogemhouse.json', function (geometry, mat){
+                    dodgemhouseroof = new THREE.Mesh(geometry, mat[0]);
+                        loader.load('dodgemfront.json', function(geometry, mat){
+                            dodgemfront = new THREE.Mesh(geometry, mat[0]);
+                            loader.load('Dodgembase.json', function(geometry, mat){
+                                dodgembase = new THREE.Mesh(geometry, mat[0]);
+                                loader.load('dodgem1.json', function(geometry, mat){
+                                    dodgem1 = new THREE.Mesh(geometry, mat[0]);
+                                    loader.load('dodgemback.json', function(geometry, mat){
+                                        dodgemback = new THREE.Mesh(geometry, mat[0]);
+                                        loader.load('character1.json', function(geometry, mat){
+                                            character1 = new THREE.Mesh(geometry, mat[0]);
+                                            loader.load('character2.json', function(geometry, mat){
+                                                character2 = new THREE.Mesh(geometry, mat[0]);
+                                                loader.load('dogemhousetop.json', function(geometry, mat){
+                                                    dodgemhousetop = new THREE.Mesh(geometry, mat[0]);
+
+            // Blender koordináták átalakítása Three.js-be
+            meshLoaded.rotation.x = THREE.Math.degToRad( 0 );
+            meshLoaded.updateMatrix();
+            geometry.applyMatrix( meshLoaded.matrix );
+            meshLoaded.rotation.set( 0, 0, 0 );
+            meshLoaded.updateMatrix();
+            geometry.computeVertexNormals();
+
+            meshLoaded.scale.set( 1, 1, 1 );
+
+            init();
+        })})})})})})})})})});
+
+    }
+
+    function hideElem() {
+        if(event.keyCode == 49) {
+            document.getElementById("info").style.visibility = "hidden";
+            document.getElementById("caption").style.visibility = "hidden";
+        }
+    }
+    function showElem() {
+        if(event.keyCode == 50) {
+            document.getElementById("info").style.visibility = "visible";
+            document.getElementById("caption").style.visibility = "visible";
+        }
+    }
+
+
+
+
+    function init() {
+        infoPanel = document.getElementById( 'caption' );
+        infoPanel1 = document.getElementById( 'info' );
+        // Böngésző ablakméret lekérése és méretarány számítása
+        HEIGHT = window.innerHeight;
+        WIDTH = window.innerWidth;
+        aspectRatio = WIDTH / HEIGHT;
+
+        // Renderer létrehozása és DOM-hoz adása
+        renderer = new THREE.WebGLRenderer( { antialias: true } );
+        renderer.setSize( WIDTH, HEIGHT );
+        renderer.setClearColor( 0xffffff);
+        renderer.shadowMap.enabled = true;
+        document.body.appendChild( renderer.domElement );
+
+        // Színtér létrehozása
+        scene = new THREE.Scene();
+
+
+
+        // Kamera létrehozása és vetítési paramétereinek beállítása
+        camera = new THREE.PerspectiveCamera( 75, aspectRatio, 0.1, 1000 );
+        camera.position.z = 60;
+        camera.position.y = 20;
+        camera.lookAt( scene.position );
+
+        controls = new THREE.TrackballControls( camera, renderer.domElement );
+        controls.rotateSpeed = 5.0;
+        controls.panSpeed = 1.0;
+
+
+        //Textúrafájl betöltése
+        var textureLoader = new THREE.TextureLoader();
+        var texture = textureLoader.load( 'texture/168.jpg' );
+        var normal = textureLoader.load( 'texture/168_norm.jpg' );
+
+        var textureLoader2 = new THREE.TextureLoader();
+        var texture2 = textureLoader2.load('roof.jpg');
+
+        var textureLoader3 = new THREE.TextureLoader();
+        var texture3 = textureLoader3.load('door.jpg');
+
+        var textureLoader4 = new THREE.TextureLoader();
+        var texture4 = textureLoader4.load('wall.jpg');
+
+
+        // Létrehozok klónokat az alap kerítésemből
+
+        var meshLoaded2 = meshLoaded.clone();
+        var fence2 = meshLoaded2.clone();
+        var fence3 = meshLoaded.clone();
+        var fence4 = meshLoaded.clone();
+        var fence5 = meshLoaded.clone();
+        var fence6 = meshLoaded.clone();
+        var fence7 = meshLoaded.clone();
+
+        //Belerakom őket egy group-ba
+        var fences = new THREE.Group();
+        meshLoaded2.position.set(0,0,12.5);
+        fence2.position.set(0,0, 25);
+        fence3.position.set(0,0,-12.5);
+        fence4.position.set(0,0,-25);
+        fence5.position.set(0,0,-37.5);
+        fence6.position.set(0,0,-50);
+        fence7.position.set(0,0,-62.5);
+        fences.add(meshLoaded);
+        fences.add(meshLoaded2);
+        fences.add(fence2);
+        fences.add(fence3);
+        fences.add(fence4);
+        fences.add(fence5);
+        fences.add(fence6);
+        fences.add(fence7);
+
+        //Megváltoztatom a helyzetüket
+        fences.rotation.y = -1.0 * THREE.Math.degToRad( 90 );
+        fences.position.z = -50;
+        fences.position.x = -18.5;
+
+        var fences_lt = fences.clone();
+        fences_lt.rotation.y = -1.0 * THREE.Math.degToRad( 0 );
+        fences_lt.position.set(-50, 0, 18.5);
+
+        var fences_rt = fences.clone();
+        fences_rt.rotation.y = -1.0 * THREE.Math.degToRad( 180 );
+        fences_rt.position.set(50, 0, -18.5);
+
+
+        scene.add(fences_rt);
+        scene.add(fences_lt);
+        scene.add(fences);
+
+        //Dodgem-ház elemeit belerakom egy group-ba és a színtérhez adom
+        dodgemhousetop.position.y = -2.1;
+        var dodgemhouse = new THREE.Group();
+        dodgemhouse.add(dodgemhousetop);
+        dodgemhouse.add(meshLoaded3);
+        dodgemhouse.add(dodgemhouseroof);
+        dodgemhouse.scale.set(3,3,3);
+        dodgemhouse.rotation.y = -1.0 * THREE.Math.degToRad( -90 );
+        dodgemhouse.position.z = -10;
+        dodgemhouse.receiveShadow = true;
+        dodgemhouse.castShadow = true;
+
+        dodgem = new THREE.Group();
+        dodgem.add(dodgembase);
+        dodgem.add(dodgem1);
+        dodgem.add(dodgemfront);
+        dodgem.add(dodgemback);
+        dodgem.scale.y = 1.3;
+        dodgem.receiveShadow = true;
+        dodgem.castShadow = true;
+
+        character1.position.z = 32;
+        character2.position.z = 15;
+        character2.rotation.y = -1.0 * THREE.Math.degToRad( -90 );
+        character1.receiveShadow = true;
+        character1.castShadow = false;
+        character2.receiveShadow = true;
+        character2.castShadow = false;
+
+        //Köd hozzáadása a színtérhez
+        scene.fog = new THREE.FogExp2( 0x808080, 0.01 );
+
+
+
+        scene.add(dodgemhouse);
+        scene.add(dodgem);
+        scene.add(character1);
+        scene.add(character2);
+
+
+
+
+
+        //Talak geometria létrehozása
+        var groundGeometry = new THREE.PlaneGeometry( 100, 100 );
+        var groundMaterial = new THREE.MeshPhongMaterial( {wireframe: false, side: THREE.DoubleSide} );
+        groundMaterial.map = texture;
+        groundMaterial.normalMap = normal;
+        var groundMesh = new THREE.Mesh( groundGeometry, groundMaterial );
+        groundMesh.rotation.x = -1.0 * THREE.Math.degToRad( 90 );
+        scene.add( groundMesh );
+
+
+        //Bodé alapja
+        var boxGeometry = new THREE.BoxGeometry( 12, 12, 12 );
+        var boxMaterial = new THREE.MeshPhongMaterial( { color: 0xffffff, wireframe: false } );
+        var box = new THREE.Mesh( boxGeometry, boxMaterial );
+        box.position.set(35,6,30);
+        boxMaterial.map = texture4;
+        scene.add( box );
+
+        //Bódé teteje
+        var coneGeometry = new THREE.ConeGeometry( 10, 7, 4 );
+        var coneMaterial = new THREE.MeshPhongMaterial( { color: 0xffffff, wireframe: false } );
+        var cone = new THREE.Mesh( coneGeometry, coneMaterial );
+        coneMaterial.map = texture2;
+        cone.rotation.y = -1.0 * THREE.Math.degToRad( 45 );
+        cone.position.set(35,15,30);
+        scene.add( cone );
+
+        //Bódé ajtaja
+        var planeGeometry = new THREE.PlaneGeometry( 4, 7, 2, 3 );
+        var planeMaterial = new THREE.MeshPhongMaterial( { color: 0xffffff, wireframe: false } );
+        var ajto = new THREE.Mesh( planeGeometry, planeMaterial );
+        ajto.rotation.y = -1.0 * THREE.Math.degToRad( 90 );
+        ajto.position.set(28.9,3.5,30);
+        planeMaterial.map = texture3;
+        scene.add( ajto );
+
+        // Fények
+        var ambientLight = new THREE.AmbientLight( 0xffffff, 0.3 );
+        scene.add( ambientLight );
+
+        pLight = new THREE.PointLight( 0xffffff, 0.3 );
+        pLight.position.set( 0, 15, 15 );
+        pLight.visible = true;
+        pLight.castShadow = true;
+        scene.add( pLight );
+
+        var sLight = new THREE.SpotLight( 0xffffff, 1 );
+        sLight.position.set( 20, 20, 0 );
+        sLight.angle = Math.PI / 16;
+        sLight.target = groundMesh;
+        sLight.castShadow = true;
+        scene.add( sLight );
+
+
+        // Az ablak későbbi átméretezése esetén visszahívható függvény megadása
+        window.addEventListener( 'resize', handleWindowResize, false );
+
+        document.addEventListener('keydown', KeyDown, false);
+        document.addEventListener('keydown', hideElem, false);
+        document.addEventListener('keydown', showElem, false);
+
+
+        // Első képkocka rajzolása
+        render();
+    }
+
+
+
+    function KeyDown() {
+        var speed =0.5;
+        var turnspeed = 0.3;
+
+        if(event.keyCode == 39) {
+            dodgem.position.x += speed; //jobbra
+            if(dodgem.rotation.y < 1.0 * THREE.Math.degToRad( 90 )
+                    && dodgem.rotation.y > -1.0 * THREE.Math.degToRad( 90 )) {
+                dodgem.rotation.y -= turnspeed;
+                if (dodgem.rotation.y < -1.0 * THREE.Math.degToRad(90)) {
+                    dodgem.rotation.y += turnspeed;
+                }
+            }
+            else if(dodgem.rotation.y > 1.0 * THREE.Math.degToRad( 90 )
+                    && dodgem.rotation.y < 1.0 * THREE.Math.degToRad( 270 )) {
+                dodgem.rotation.y += turnspeed;
+                if (dodgem.rotation.y > 1.0 * THREE.Math.degToRad( 270 )) {
+                    dodgem.rotation.y -= turnspeed;
+                }
+            }
+        }
+        else if(event.keyCode == 37){
+            dodgem.position.x -= speed; // balra
+            if(dodgem.rotation.y < 1.0 * THREE.Math.degToRad( 90 )
+                    && dodgem.rotation.y > -1.0 * THREE.Math.degToRad( 90 )) {
+                dodgem.rotation.y += turnspeed;
+                if (dodgem.rotation.y > 1.0 * THREE.Math.degToRad(90)) {
+                    dodgem.rotation.y -= turnspeed;
+                }
+            }
+            else if(dodgem.rotation.y > 1.0 * THREE.Math.degToRad( 90 )
+                    && dodgem.rotation.y < 1.0 * THREE.Math.degToRad( 270 )) {
+                dodgem.rotation.y -= turnspeed;
+                if (dodgem.rotation.y < 1.0 * THREE.Math.degToRad(90)) {
+                    dodgem.rotation.y += turnspeed;
+                }
+            }
+        }
+        else if(event.keyCode == 40){
+            dodgem.position.z += speed; // előre
+            if(dodgem.rotation.y < 1.0 * THREE.Math.degToRad( 180 ) && dodgem.rotation.y > 0 ) {
+                dodgem.rotation.y += turnspeed;
+                if (dodgem.rotation.y > 1.0 * THREE.Math.degToRad( 180 )){
+                    dodgem.rotation.y -= turnspeed;
+                }
+            }
+            else if(dodgem.rotation.y > -1.0 * THREE.Math.degToRad( 180 ) && dodgem.rotation.y < 0){
+                dodgem.rotation.y -= turnspeed;
+                if(dodgem.rotation.y < -1.0 * THREE.Math.degToRad( 180 )){
+                    dodgem.rotation.y += turnspeed;
+                }
+            }
+
+
+        }
+        else if(event.keyCode == 38){
+            dodgem.position.z -= speed; //hátra
+            if(dodgem.rotation.y < 1.0 * THREE.Math.degToRad( 180 ) && dodgem.rotation.y > 0 ) {
+                dodgem.rotation.y -= turnspeed;
+                if (dodgem.rotation.y < 0){
+                    dodgem.rotation.y += turnspeed;
+                }
+            }
+            else if(dodgem.rotation.y > -1.0 * THREE.Math.degToRad( 180 ) && dodgem.rotation.y < 0){
+                dodgem.rotation.y += turnspeed;
+                if(dodgem.rotation.y > 0){
+                    dodgem.rotation.y -= turnspeed;
+                }
+            }
+        }
+        else if(event.keyCode == 84){
+            if(pLight.visible == false){
+                pLight.visible = true;
+            }else if(pLight.visible == true){
+                pLight.visible = false;
+            }
+        }
+        else if(event.keyCode == 48){
+            if( infoPanel.style.visibility == "visible"
+                    &&  infoPanel1.style.visibility == "visible"){
+                infoPanel.style.visibility = "hidden";
+                infoPanel1.style.visibility = "hidden";
+            }else if(infoPanel.style.visibility == "hidden"
+                    &&  infoPanel1.style.visibility == "hidden"){
+               infoPanel.style.visibility = "visible";
+                infoPanel1.style.visibility = "visible";
+            }
+        }
+
+    }
+
+
+
+
+    function handleWindowResize() {
+        // Az ablak átméretezése esetén a kamera vetítési paraméterek újraszámolása
+        HEIGHT = window.innerHeight;
+        WIDTH = window.innerWidth;
+        console.log( 'WIDTH=' + WIDTH + '; HEIGHT=' + HEIGHT );
+        renderer.setSize( WIDTH, HEIGHT );
+        aspectRatio = WIDTH / HEIGHT;
+        camera.aspect = aspectRatio;
+        camera.updateProjectionMatrix();
+    }
+
+    var render = function () {
+        // Újabb képkocka rajzolásának kérése.
+        // Maximálisan 60 FPS-t biztosít a rendszer.
+        requestAnimationFrame( render );
+
+        controls.update();
+
+
+        if(dodgem.position.x > 24 ){
+            dodgem.position.x = 23;
+        }
+        if(dodgem.position.x < -24){
+            dodgem.position.x = -23;
+        }
+        if(dodgem.position.z > 4){
+            dodgem.position.z = 3;
+        }
+        if(dodgem.position.z < -23){
+            dodgem.position.z = -22;
+        }
+
+
+
+        character1.position.x += 0.05;
+        character1.rotation.y += 0.01;
+        if(character1.rotation.y > Math.PI / 18 || character1.rotation.y < -Math.PI / 6){
+            character1.rotation.y = 0;
+            character1.rotation.y *= -1;
+        }
+        if(character1.position.x > 25 ){
+            character1.position.x -= 0.05;
+            character1.rotation.y -= 0.01;
+            character1.position.x = 0;
+        }
+
+
+
+
+
+
+        // 3D -> 2D vetített kép kiszámítása.
+        // scene 3D színtér képe a camera kamera szemszögéből.
+        renderer.render( scene, camera );
+    };
+
+</script>
+</body>
+</html>
